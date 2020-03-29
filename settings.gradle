@@ -1,0 +1,2 @@
+rootProject.name='DemoDataBinding'
+include ':app'

@@ -1,0 +1,134 @@
+
+https://developer.android.com/topic/libraries/data-binding/expressions
+https://developer.android.com/topic/libraries/data-binding/observability
+https://developer.android.com/topic/libraries/data-binding/binding-adapters#top_of_page
+https://medium.com/androiddevelopers/data-binding-lessons-learnt-4fd16576b719
+https://www.programcreek.com/java-api-examples/?api=android.databinding.BindingConversion
+
+
+project:
+   1- make sure that AndroidSDK -> SDK tools -> support repository -> Android support repository is installed.
+   2- app/gradle : Android.dataBinding.enabled = true.
+
+xml-layout file
+    1- add <layout></layout> tells androidStudio that we'll use dataBinding with this view
+    2- <data></data> inside "<layout>":
+        we can declare variables, use "snake_case" with variable's naming. The variable can be:
+            * a ref to the model and which will be bound to through the Activity/viewModel
+            * a ref to an interface
+            * a local variable
+    3- To use any other classes inside an expression  @{ .. },  we can import it using import-tag
+            <import type="android.view.View"/> inside "<layout>"
+            after that:
+            android:visibility="@{product.isOnSale ? View.VISIBLE : View.INVISIBLE}"
+
+Activity
+   1- after adding layout-tag in the xml file, a "binding class" with the same xml file name will be generated but with "PascalCase" with (Binding suffix) added to it.
+      naming, we have to use an instance of the generated binding class in order to bind to the view.
+      if the xml file is "activity_main.xml" the generated class will be "ActivityMainBinding.java".
+   2- init mainBinding = DataBindingUtil.setContentView(..)  instead of setContentView(R.layout.activity_main);
+   3- Create an instance of the model/dataObject
+   4- in the activiey bind the "instance of the model/dataObject" to the ref in the xml_layout =>           mainBinding.setProduct(product);
+
+     to Access any variable declared in the xml file use the same variable name but in "PascalCase"
+           for ex. if "var_name" is declared in the xml, we can bind it with a variable in Activity with the name "VarName"
+
+
+
+Data binding event handling
+https://developer.android.com/topic/libraries/data-binding/expressions#listener_bindings
+
+You can use the following mechanisms to handle an event:
+
+Method references:
+    In your expressions, you can reference methods that has the same signature of the listener method. "the parameters of the method must match the parameters of the event listener".
+
+    public class MyHandlers {
+        public void onClickFriend(View view) { ... }
+    }
+
+    <TextView
+        ...
+        android:onClick="@{handlers::onClickFriend}"/>
+
+
+Listener bindings
+    These are lambda expressions that are evaluated when the event happens. In listener bindings, only your return value of the expression must match the expected return value of the listener (unless it is expecting void).
+
+
+    Listener bindings provide two choices for listener parameters:
+
+      - android:onClick accept one only one param, so:
+        you can either write {(view)-> ...} or omit the "view" param {()-> ...}
+        public class SomeClass {
+            public void onClickFriend(Task task) { ... }
+        }
+
+        <TextView
+            ...
+            android:onClick="@{() -> someClass.onSaveClick(task)}" />
+        OR
+        <TextView
+            ...
+            android:onClick="@{(view) -> someClass.onSaveClick(task)}" />
+
+
+      - android:onCheckedChanged, takes 2 params public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {..}
+
+        public class SomeClass {
+            public void onCompletedChanged(Task task1, int num, int ind){ ... }
+        }
+
+        <TextView
+            ...
+            android:onClick="@{() -> someClass.onSaveClick(task1, num, ind)}" />
+
+        OR
+        public class SomeClass {
+            public void onCompletedChanged(Task task1, int num, int ind, boolean completed){ ... }
+        }
+
+        <TextView
+            ...
+            android:onClick="@{(buttonView, isChecked) -> someClass.onSaveClick(task1, num, ind, isChecked)}" />
+
+
+
+
+
+
+
+
+
+
+Binding adapters
+https://developer.android.com/topic/libraries/data-binding/binding-adapters
+
+
+
+3 atttirbute to the same method/bindingAdapter
+    @BindingAdapter({"image_uri_adapter", "image_uri_placeholder", "image_uri_error"})
+    public static void loadImageDrawable(ImageView view, int drawableId, Drawable placeholder, Drawable error) {
+        Context context =  view.getContext();
+        RequestOptions requestOptions = new RequestOptions().override(64, 64).placeholder(placeholder).error(error);
+        Glide.with(context).asBitmap().load(drawableId).apply( requestOptions).into(view);
+    }
+
+    we must implement ALL of the 3 attirbutes
+    <ImageView
+        app:image_uri_adapter="@{product.image_drawable}"
+        app:image_uri_placeholder="@{@drawable/ic_launcher_background}"
+        app:image_uri_error="@{@drawable/ic_launcher_background}"
+
+the same as
+
+    @BindingAdapter({"image_uri_adapter"})
+    public static void loadImageDrawable(ImageView view, int drawableId) {
+        Context context =  view.getContext();
+        RequestOptions requestOptions = new RequestOptions().override(64, 64).placeholder(R.drawable.ic_launcher_background).error(R.drawable.ic_launcher_background);
+        Glide.with(context).asBitmap().load(drawableId).apply( requestOptions).into(view);
+    }
+
+    and in the xml-layout
+    <ImageView
+        app:image_uri_adapter="@{product.image_drawable}"
